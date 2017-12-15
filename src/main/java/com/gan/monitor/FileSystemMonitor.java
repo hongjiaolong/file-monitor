@@ -6,7 +6,10 @@
  */
 package com.gan.monitor;
 
+import java.io.IOException;
+import java.nio.file.WatchService;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  *
@@ -18,26 +21,57 @@ import java.util.Map;
  */
 public class FileSystemMonitor {
     
+    private WatchService watchService;
     private Map<String, MonitorPoint> points = null;
     
-    public static FileSystemMonitor getInstance() {
-        return null;
+    public String addMonitorPoint(String key, MonitorPoint point) {
+        if (points.containsKey(key)) {
+            // WARN LOG
+            return null;
+        }
+        
+        points.put(key, point);
+        registerMonitorPoint(point);
+        return key;
     }
     
     public String addMonitorPoint(MonitorPoint point) {
-        return null;
+        String key = UUID.randomUUID().toString();
+        return this.addMonitorPoint(key, point);
     }
     
     public void removeMonitorPoint(String key) {
-        
+        MonitorPoint point = points.remove(key);
     }
     
     public void modifyMonitorPoint(String key, MonitorPoint newPoint) {
-        
+        getMonitorPoint(key);
     }
     
-    public Map<String, MonitorPoint> getMonitorPoints() {
-        return null;
+    public MonitorPoint getMonitorPoint(String key) {
+        return points.get(key);
     }
+    
+    private void registerMonitorPoint(MonitorPoint point) {
+        try {
+            point.getPath().register(watchService, point.getInterestOps());
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+    
+    /********************************************************
+     * 单例实现
+     ********************************************************/
+    
+    private FileSystemMonitor() {}
+    public static FileSystemMonitor getInstance() {
+        return SingletonHolder.INSTANCE;
+    }
+    private static class SingletonHolder {
+        static final FileSystemMonitor INSTANCE = new FileSystemMonitor();
+    }
+    
     
 }
