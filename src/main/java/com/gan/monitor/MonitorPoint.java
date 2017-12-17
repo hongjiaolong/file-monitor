@@ -6,9 +6,7 @@
  */
 package com.gan.monitor;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent;
 
 /**
  *
@@ -20,12 +18,12 @@ import java.nio.file.WatchEvent.Kind;
  */
 public class MonitorPoint {
     
-    private Path path;
-    private Kind<?>[] interestOps;
+    private String path;
+    private WatchEvent.Kind<?>[] interestOps;
     private IWatchEventHandler handler;
     
-    public MonitorPoint(String path, Kind<?>[] interestOps, IWatchEventHandler handler) {
-        this.path = Paths.get(path);
+    public MonitorPoint(String path, WatchEvent.Kind<?>[] interestOps, IWatchEventHandler handler) {
+        this.path = path;
         this.interestOps = interestOps;
         this.handler = handler;
     }
@@ -34,16 +32,16 @@ public class MonitorPoint {
      * 对象存取器
      ********************************************************/
     
-    public Path getPath() {
+    public String getPath() {
         return path;
     }
-    public void setPath(Path path) {
+    public void setPath(String path) {
         this.path = path;
     }
-    public Kind<?>[] getInterestOps() {
+    public WatchEvent.Kind<?>[] getInterestOps() {
         return interestOps;
     }
-    public void setInterestOps(Kind<?>[] interestOps) {
+    public void setInterestOps(WatchEvent.Kind<?>[] interestOps) {
         this.interestOps = interestOps;
     }
     public IWatchEventHandler getHandler() {

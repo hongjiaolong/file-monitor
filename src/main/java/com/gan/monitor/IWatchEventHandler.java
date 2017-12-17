@@ -6,6 +6,10 @@
  */
 package com.gan.monitor;
 
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.util.List;
+
 /**
  * 
  *
@@ -15,5 +19,22 @@ package com.gan.monitor;
  *
  */
 public interface IWatchEventHandler {
+    
     void handle();
+    
+    default boolean isRunInNewThread() {
+        return true;
+    }
+    
+    default void handle(WatchKey key) {
+        List<WatchEvent<?>> events = key.pollEvents();
+        
+        for (WatchEvent<?> event : events) {
+            System.out.println(event.context() + " comes to " + event.kind());
+        }
+        
+        if (!key.reset()) {
+            
+        }
+    }
 }
