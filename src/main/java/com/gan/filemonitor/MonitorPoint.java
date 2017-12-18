@@ -4,9 +4,11 @@
  * Contributors:
  *     Agree Corporation - initial API and implementation
  */
-package com.gan.monitor;
+package com.gan.filemonitor;
 
 import java.nio.file.WatchEvent;
+
+import com.gan.filemonitor.handler.IWatchEventHandler;
 
 /**
  *

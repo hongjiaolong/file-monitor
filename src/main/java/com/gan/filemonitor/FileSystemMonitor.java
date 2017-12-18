@@ -4,7 +4,7 @@
  * Contributors:
  *     Agree Corporation - initial API and implementation
  */
-package com.gan.monitor;
+package com.gan.filemonitor;
 
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.gan.filemonitor.handler.IWatchEventHandler;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
