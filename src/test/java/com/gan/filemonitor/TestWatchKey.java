@@ -8,7 +8,9 @@ package com.gan.filemonitor;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
+import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
@@ -18,6 +20,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.gan.test.util.FileUtil;
 
 /**
  * 
@@ -30,9 +34,8 @@ import org.junit.jupiter.api.Test;
 class TestWatchKey {
     
     /********************************************************
-     * cancel
+     * cancel() 取消 watch service 的注册. 
      * 
-     * 取消 watch service 的注册.
      * 1、取消后，返回的 watch key 都是 invalid 的.
      * 2、取消后，如果 watch key 已经入队了, 等待被 watch service 检索, 它会一直存在于队列中，直到被移除.
      * 3、取消后，如果有等待中的事件, 会保持等待, 并且可以通过调用 pollEvents 方法来获取.
@@ -141,11 +144,17 @@ class TestWatchKey {
         }
     }
     
-    String root = "";
+    static Path rootPath;
     
     @BeforeAll
-    void initAll() {
-        
+    static void initAll() {
+        rootPath = Paths.get("src/test/resources");
+//        FileUtil.delete(rootPath);
+        try {
+            rootPath = Paths.get("src/test/resources").toRealPath();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
     
     @BeforeEach

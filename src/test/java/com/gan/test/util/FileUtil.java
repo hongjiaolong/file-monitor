@@ -24,12 +24,17 @@ import java.nio.file.attribute.BasicFileAttributes;
  */
 public class FileUtil {
     
-    
     public static void delete(Path path) throws IOException {
         try {
             Files.deleteIfExists(path);
         } catch (DirectoryNotEmptyException e) {
             Files.walkFileTree(path, new FileVisitorForDelete());
+        }
+    }
+    
+    public static void cleanDirectory(Path dir) throws IOException {
+        if (Files.isDirectory(dir)) {
+            Files.walkFileTree(dir, new FileVisitorForClean(dir));
         }
     }
     
@@ -44,6 +49,26 @@ public class FileUtil {
         public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
             FileVisitResult result = super.postVisitDirectory(dir, exc);
             Files.delete(dir);
+            return result;
+        }
+    }
+    private static class FileVisitorForClean extends SimpleFileVisitor<Path> {
+        Path rootPath;
+        FileVisitorForClean(Path rootPath) {
+            this.rootPath = rootPath;
+        }
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            FileVisitResult result = super.visitFile(file, attrs);
+            Files.delete(file);
+            return result;
+        }
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            FileVisitResult result = super.postVisitDirectory(dir, exc);
+            if (!rootPath.equals(dir)) {
+                Files.delete(dir);
+            }
             return result;
         }
     }
