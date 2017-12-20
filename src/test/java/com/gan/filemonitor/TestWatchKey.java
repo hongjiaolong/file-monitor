@@ -33,11 +33,11 @@ class TestWatchKey {
      * cancel
      * 
      * 取消 watch service 的注册.
-     * 取消后，返回的 watch key 都是 invalid 的.
-     * 如果 watch key 已经入队了, 等待被 watch service 检索, 它会一直存在于队列中，直到被移除.
-     * 如果有等待中的事件, 会保持等待, 并且可以通过调用 pollEvents 方法来获取.
-     * 如果 watch key 已经被取消了, 调用该方法没影响.
-     * 一旦被取消，watch key 将会永远 invalid.
+     * 1、取消后，返回的 watch key 都是 invalid 的.
+     * 2、取消后，如果 watch key 已经入队了, 等待被 watch service 检索, 它会一直存在于队列中，直到被移除.
+     * 3、取消后，如果有等待中的事件, 会保持等待, 并且可以通过调用 pollEvents 方法来获取.
+     * 4、如果 watch key 已经被取消了, 调用该方法没影响.
+     * 5、一旦被取消，watch key 将会永远 invalid.
      ********************************************************/
     @Test
     void testCancel() throws Exception {
@@ -141,6 +141,16 @@ class TestWatchKey {
         }
     }
     
+    String root = "";
     
+    @BeforeAll
+    void initAll() {
+        
+    }
+    
+    @BeforeEach
+    void initEach() {
+        
+    }
     
 }
