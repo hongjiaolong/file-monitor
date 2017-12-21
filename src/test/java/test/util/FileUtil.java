@@ -29,13 +29,15 @@ public class FileUtil {
     /**
      * 初始化指定目录. 如果目录不存在, 创建目录. 如果目录存在, 清空该目录{@link FileUtil.clean}
      * 
-     * @param dir 要初始化的目录
+     * @param dir
+     *            要初始化的目录
      * @return 返回标准化绝对路径
-     * @throws SecurityException - In the case of the default provider, the
-     *             SecurityManager.checkRead(String) is invoked to check read access
-     *             to the file. Or the checkWrite method is invoked prior to
-     *             attempting to create a directory and its checkRead is invoked for
-     *             each parent directory that is checked.
+     * @throws SecurityException
+     *             - In the case of the default provider, the
+     *             SecurityManager.checkRead(String) is invoked to check read
+     *             access to the file. Or the checkWrite method is invoked prior
+     *             to attempting to create a directory and its checkRead is
+     *             invoked for each parent directory that is checked.
      * 
      * 
      */
@@ -57,16 +59,23 @@ public class FileUtil {
     }
 
     /**
-     * 清空指定的目录. 
+     * 清空指定的目录.
      * 
-     * <p> 如果 {@code path} 是一个普通文件, 该方法不做任何事. 
+     * <p>
+     * 如果 {@code path} 是一个普通文件, 该方法不做任何事.
      * 
-     * <p> {@code options} 参数用于指示如何处理符号链接. 默认情况下, 处理符号链接所指向的目标路径. 如果设置为
-     * {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS}, 代表仅当作链接文件处理. 
+     * <p>
+     * {@code options} 参数用于指示如何处理符号链接. 默认情况下, 处理符号链接所指向的目标路径. 如果设置为
+     * {@link LinkOption#NOFOLLOW_LINKS NOFOLLOW_LINKS}, 代表仅当作链接文件处理.
      * 
      * @param path
+     *            要清空的目录
      * @param options
-     * @throws IOException
+     *            指示如何处理符号链接
+     * 
+     * @throws SecurityException In the case of the default provider, and a security manager is
+     *          installed, its {@link SecurityManager#checkRead(String) checkRead}
+     *          method denies read access to the {@code path}.
      */
     public static void cleanDirectory(Path path, LinkOption... options) throws IOException {
         if (Files.isDirectory(path, options)) {
