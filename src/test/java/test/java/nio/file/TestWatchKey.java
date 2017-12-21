@@ -4,12 +4,13 @@
  * Contributors:
  *     Xxx Corporation - initial API and implementation
  */
-package com.gan.filemonitor;
+package test.java.nio.file;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.gan.test.util.FileUtil;
+import test.util.FileUtil;
 
 /**
  * 
@@ -144,14 +145,15 @@ class TestWatchKey {
         }
     }
     
+    @Test
+    void f() {}
+    
     static Path rootPath;
     
     @BeforeAll
     static void initAll() {
-        rootPath = Paths.get("src/test/resources");
-//        FileUtil.delete(rootPath);
         try {
-            rootPath = Paths.get("src/test/resources").toRealPath();
+            rootPath = FileUtil.init(Paths.get("src/test/resources"));
         } catch (IOException e) {
             e.printStackTrace();
         }
