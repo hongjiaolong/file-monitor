@@ -22,11 +22,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,8 @@ import com.gan.filemonitor.handler.IWatchEventHandler;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import core.GenerateNameException;
+import core.NameManager;
 
 /**
  *
@@ -48,136 +53,81 @@ public class FileSystemMonitor {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemMonitor.class);
     
-    private ExecutorService pool = Executors.newCachedThreadPool();
+    private PathWatcherPool watcherPool = new PathWatcherPool();
     
-    private class PathWatcher {
-        private WatchService watchService;
-        private Map<Path, MonitorPoint> manifest = new HashMap<>();
-        public PathWatcher() throws IOException {
-            watchService = FileSystems.getDefault().newWatchService();
-        }
-        public void register(Path path, MonitorPoint point) throws IOException {
-            path.register(watchService, point.getInterestOps());
-            manifest.put(path, point);
-            
-            pool.submit(new PathWatcherTask());
-        }
-        public boolean hasManifestItem(Path path) {
-            return manifest.containsKey(path);
-        }
-        private class PathWatcherTask implements Runnable {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        WatchKey key = watchService.take();
-                        IWatchEventHandler handler = manifest.get(key.watchable()).getHandler();
-                        if (handler.isRunInNewThread()) {
-                            pool.submit(() -> handler.handle(key));
-                        } else {
-                            handler.handle(key);
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+    private NameManager<MonitorPoint> manager = new NameManager<MonitorPoint>() {
+        @Override
+        protected String generateName(MonitorPoint point) throws GenerateNameException {
+            if (StringUtils.isBlank(point.getName())) {
+                throw new GenerateNameException(point + " has not a name");
             }
-        }
-    }
-    
-    
-    public static void main(String[] args) throws IOException {
-        ThreadPoolExecutor es = (ThreadPoolExecutor) Executors.newCachedThreadPool();
-        es.submit(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    System.out.println("out: " + System.currentTimeMillis());
-                    es.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                System.out.println("in");
-                            } catch (Exception e) {
-                                System.err.println("KK");
-                            }
-                            
-                        }
-                    });
-                    System.out.println("before shutdown : " + System.currentTimeMillis());
-                  es.shutdown();
-                  System.out.println("after shutdown : " + System.currentTimeMillis());
-                } catch (Exception e) {
-                    System.out.println("LL" + e);
-                }
-                
+            if (exists(point.getName())) {
+                throw new GenerateNameException(point + " has been registered");
             }
-        });
-        try {
-//            System.out.println("before shutdown : " + System.currentTimeMillis());
-//            es.shutdown();
-//            System.out.println("after shutdown : " + System.currentTimeMillis());
-            System.out.println("before awaitTermination : " + System.currentTimeMillis());
-            es.awaitTermination(10000, TimeUnit.SECONDS);
-            System.out.println("after awaitTermination : " + System.currentTimeMillis());
-        } catch (Throwable e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            return point.getName();
         }
-    }
+    };
     
-    private Map<String, MonitorPoint> points = null;
-    private List<PathWatcher> watchers = null;
+    private ExecutorService watcherThreadPool = Executors.newCachedThreadPool();
+    private ExecutorService handlerThreadPool;
     
-    public String addMonitorPoint(String key, MonitorPoint point) {
-        if (points.containsKey(key)) {
-            LOGGER.error("Fail to register a MonitorPoint{key={},path={}}. Cause by : Key has already existed", key, point.getPath());
-            return null;
-        }
+    public void addMonitorPoint(MonitorPoint point) throws MonitorException {
+//        // 未启动
+//        manager.register(point);
         
+        // 启动
         try {
-            Path path = Paths.get(point.getPath()).toRealPath();
-            for (PathWatcher watcher : watchers) {
-                try {
-                    if (!watcher.hasManifestItem(path)) {
-                        watcher.register(path, point);
-                        points.put(key, point);
-                        return key;
-                    }
-                } catch (ClosedWatchServiceException e) {
-                    LOGGER.warn("MonitorPoint{key={},path={}} try to register to a closed WatchService", key, point.getPath());
-                }
-            }
-            
-            PathWatcher newWatcher = new PathWatcher();
-            newWatcher.register(path, point);
-            watchers.add(newWatcher);
-            points.put(key, point);
-            return key;
-            
-        } catch (IOException e) {
-            LOGGER.error("Fail to register a MonitorPoint{key={},path={}}. Cause by : {}", key, point.getPath(), e);
-            return null;
+            manager.register(point);
+            watcherPool.register(point);
+        } catch (Exception e) {
+            throw new MonitorException("Fail to add " + point, e);
         }
     }
     
-    public String addMonitorPoint(MonitorPoint point) {
-        String key = UUID.randomUUID().toString();
-        return this.addMonitorPoint(key, point);
+    public boolean addMonitorPoint(String name, MonitorPoint point) {
+        return false;
     }
     
-    public void removeMonitorPoint(String key) {
-        MonitorPoint point = points.remove(key);
+    public boolean removeMonitorPoint(MonitorPoint point) {
+        return false;
     }
     
-    public void modifyMonitorPoint(String key, MonitorPoint newPoint) {
-        getMonitorPoint(key);
+    public boolean removeMonitorPoint(String name) {
+        return false;
     }
     
-    public MonitorPoint getMonitorPoint(String key) {
-        return points.get(key);
+    public void updateMonitorPoint(MonitorPoint point) {
+        
     }
+    
+    public void updateMonitorPoint(String name, MonitorPoint newPoint) {
+        
+    }
+    
+    public MonitorPoint getMonitorPoint(String name) {
+        return null;
+    }
+    
+    public List<MonitorPoint> getAllMonitorPoints() {
+        return null;
+    }
+    
+    public void init() {
+        
+    }
+    
+    public void start() {
+        
+    }
+    
+    public void stop() {
+        
+    }
+    
+    public void destroy() {
+        
+    }
+    
     
     /********************************************************
      * 单例实现
@@ -191,5 +141,9 @@ public class FileSystemMonitor {
         static final FileSystemMonitor INSTANCE = new FileSystemMonitor();
     }
     
+    public static void main(String[] args) throws Exception {
+        FileSystemMonitor monitor = new FileSystemMonitor();
+        monitor.addMonitorPoint(new MonitorPoint());
+    }
     
 }

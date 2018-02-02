@@ -6,14 +6,12 @@
  */
 package com.gan.other;
 
-import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Paths;
-
-import javax.tools.JavaCompiler;
-import javax.tools.JavaCompiler.CompilationTask;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 
 import org.junit.jupiter.api.Test;
 
@@ -37,13 +35,22 @@ class TestOther {
         System.out.println(Paths.get("src/main/resources/logback.xml").toRealPath());
     }
     
-    public static void main(String[] args) throws IOException {
-        JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-        StandardJavaFileManager manager = javac.getStandardFileManager(null, null, null);
-        Iterable<? extends JavaFileObject> it = manager.getJavaFileObjects("src/main/java/com/gan/filemonitor/handler/IWatchEventHandler.java");
-        CompilationTask task = javac.getTask(null, manager, null, null, null, it);
-        task.call();
-        manager.close();
+    public static void main(String[] args) throws Exception {
+        WatchService watchService = FileSystems.getDefault().newWatchService();
+        Paths.get("E:\\aaa").register(watchService, 
+            StandardWatchEventKinds.ENTRY_CREATE,
+            StandardWatchEventKinds.ENTRY_MODIFY,
+            StandardWatchEventKinds.ENTRY_DELETE);
+        while (true) {
+            WatchKey key = watchService.take();
+            for (WatchEvent<?> event : key.pollEvents()) {
+                System.out.println(event.context() + " " + event.kind());
+            }
+            boolean valid = key.reset();
+            if (!valid) {
+                break;
+            }
+        }
     }
     
 }

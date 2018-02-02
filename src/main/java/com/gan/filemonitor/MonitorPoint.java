@@ -7,7 +7,9 @@
 package com.gan.filemonitor;
 
 import java.nio.file.WatchEvent;
+import java.util.List;
 
+import com.gan.filemonitor.handler.HandlerChain;
 import com.gan.filemonitor.handler.IWatchEventHandler;
 
 /**
@@ -20,20 +22,39 @@ import com.gan.filemonitor.handler.IWatchEventHandler;
  */
 public class MonitorPoint {
     
+    private String name;
     private String path;
     private WatchEvent.Kind<?>[] interestOps;
-    private IWatchEventHandler handler;
+    private List<HandlerChain> handlerChains;
     
-    public MonitorPoint(String path, WatchEvent.Kind<?>[] interestOps, IWatchEventHandler handler) {
-        this.path = path;
-        this.interestOps = interestOps;
-        this.handler = handler;
+    private boolean recursion;
+    private boolean ignoreDirectory;
+    private boolean exclusiveService;
+    private boolean inSameService;
+    
+    public boolean isFile() {
+        return false;
+    }
+    
+    public boolean isDirectory() {
+        return !isFile();
+    }
+    
+    @Override
+    public String toString() {
+        return "MonitorPoint[name=" + name + "]";
     }
     
     /********************************************************
-     * 对象存取器
+     * setter / getter
      ********************************************************/
     
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
     public String getPath() {
         return path;
     }
@@ -46,11 +67,13 @@ public class MonitorPoint {
     public void setInterestOps(WatchEvent.Kind<?>[] interestOps) {
         this.interestOps = interestOps;
     }
-    public IWatchEventHandler getHandler() {
-        return handler;
+
+    public List<HandlerChain> getHandlerChains() {
+        return handlerChains;
     }
-    public void setHandler(IWatchEventHandler handler) {
-        this.handler = handler;
+
+    public void setHandlerChains(List<HandlerChain> handlerChains) {
+        this.handlerChains = handlerChains;
     }
     
 }

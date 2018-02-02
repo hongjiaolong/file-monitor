@@ -60,10 +60,11 @@ class TestWatchKey {
     @Test
     void testSinglePath() throws Exception {
         WatchService watchService = FileSystems.getDefault().newWatchService();
-        Paths.get("src/test/resources").register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+        Paths.get("E:\\aaa").register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
         while (true) {
             WatchKey key = watchService.take();
             System.out.print("K: " + key.watchable() + "\\-");
+            System.out.println(Files.getLastModifiedTime((Path) key.watchable()));
             List<WatchEvent<?>> es = key.pollEvents();
             for (int i = 0; i < es.size(); i++) {
                 if (i == 0) {
