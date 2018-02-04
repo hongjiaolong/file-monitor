@@ -23,11 +23,10 @@ import java.util.concurrent.FutureTask;
  */
 public class HandlerChain {
     
-    private boolean runInNewThread;
     private List<Handler> handlers;
     
-    public Future<Boolean> callHandlers(String path, WatchEvent.Kind<?> event, int count, Map<String, Object> attachment) {
-        return null;
+    public void callHandlers(String path, WatchEvent.Kind<?> event, int count, Map<String, Object> attachment) {
+        CompletableFuture.supplyAsync(() -> {
     }
     
 }

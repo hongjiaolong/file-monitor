@@ -7,7 +7,9 @@
 package com.gan.filemonitor;
 
 import java.nio.file.WatchEvent;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.gan.filemonitor.handler.HandlerChain;
 import com.gan.filemonitor.handler.IWatchEventHandler;
@@ -25,7 +27,7 @@ public class MonitorPoint {
     private String name;
     private String path;
     private WatchEvent.Kind<?>[] interestOps;
-    private List<HandlerChain> handlerChains;
+    private List<HandlerChainWrapper> handlerChainWrappers;
     
     private boolean recursion;
     private boolean ignoreDirectory;
@@ -43,6 +45,17 @@ public class MonitorPoint {
     @Override
     public String toString() {
         return "MonitorPoint[name=" + name + "]";
+    }
+    
+    /********************************************************
+     * setter / getter （变体）
+     ********************************************************/
+    
+    public void addHandlerChain(HandlerChain handlerChain) {
+        this.addHandlerChain(handlerChain, true);
+    }
+    public void addHandlerChain(HandlerChain handlerChain, boolean runInSeperatedThread) {
+        this.handlerChainWrappers.add(new HandlerChainWrapper(handlerChain, runInSeperatedThread));
     }
     
     /********************************************************
@@ -67,13 +80,44 @@ public class MonitorPoint {
     public void setInterestOps(WatchEvent.Kind<?>[] interestOps) {
         this.interestOps = interestOps;
     }
-
-    public List<HandlerChain> getHandlerChains() {
-        return handlerChains;
+    public boolean isRecursion() {
+        return recursion;
     }
-
-    public void setHandlerChains(List<HandlerChain> handlerChains) {
-        this.handlerChains = handlerChains;
+    public void setRecursion(boolean recursion) {
+        this.recursion = recursion;
+    }
+    public boolean isIgnoreDirectory() {
+        return ignoreDirectory;
+    }
+    public void setIgnoreDirectory(boolean ignoreDirectory) {
+        this.ignoreDirectory = ignoreDirectory;
+    }
+    public boolean isExclusiveService() {
+        return exclusiveService;
+    }
+    public void setExclusiveService(boolean exclusiveService) {
+        this.exclusiveService = exclusiveService;
+    }
+    public boolean isInSameService() {
+        return inSameService;
+    }
+    public void setInSameService(boolean inSameService) {
+        this.inSameService = inSameService;
+    }
+    
+    public static class HandlerChainWrapper {
+        private HandlerChain handlerChain;
+        private boolean runInSeperatedThread;
+        private HandlerChainWrapper(HandlerChain handlerChain, boolean runInSeperatedThread) {
+            this.handlerChain = handlerChain;
+            this.runInSeperatedThread = runInSeperatedThread;
+        }
+        public HandlerChain getHandlerChain() {
+            return handlerChain;
+        }
+        public boolean isRunInSeperatedThread() {
+            return runInSeperatedThread;
+        }
     }
     
 }

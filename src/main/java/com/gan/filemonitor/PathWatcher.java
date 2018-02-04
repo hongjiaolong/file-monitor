@@ -32,31 +32,34 @@ public class PathWatcher {
     
     private WatchService service;
     private Map<String, WatchKey> paths;
-    private ExecutorService threadPool;
+    private FileSystemMonitor monitor;
 
-    public PathWatcher() throws IOException {
-        service = FileSystems.getDefault().newWatchService();
-        paths = new HashMap<>();
-        threadPool = Executors.newSingleThreadExecutor();
+    public PathWatcher(FileSystemMonitor monitor) throws IOException {
+        this.service = FileSystems.getDefault().newWatchService();
+        this.paths = new HashMap<>();
+        this.monitor = monitor;
     }
 
     public void register(MonitorPoint point) throws IOException {
         Path path = getAbsoluteNormalizePath(point);
         paths.put(path.toString(), path.register(service, point.getInterestOps()));
         
-        threadPool.execute(() -> {
+        monitor.getWatcherThreadPool().execute(() -> {
             while (true) {
                 try {
                     WatchKey key = service.take();
                     List<WatchEvent<?>> events = key.pollEvents();
                     for (WatchEvent<?> event : events) {
                         point.getHandlerChains().forEach(chain -> {
-                            Future<Boolean> isSuccess = chain.callHandlers(event.context().toString(), event.kind(), event.count(), null);
+                            if (point.isRunInSeperateThread(chain)) {
+                                
+                            }
+                            chain.callHandlers(event.context().toString(), event.kind(), event.count(), null);
                             
                         });
                     }
                     if (!key.reset()) {
-                        break;
+//                        paths
                     }
                 } catch (InterruptedException e) {
                     

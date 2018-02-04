@@ -71,6 +71,22 @@ public class FileSystemMonitor {
     private ExecutorService watcherThreadPool = Executors.newCachedThreadPool();
     private ExecutorService handlerThreadPool;
     
+    public ExecutorService getWatcherThreadPool() {
+        return watcherThreadPool;
+    }
+
+    public void setWatcherThreadPool(ExecutorService watcherThreadPool) {
+        this.watcherThreadPool = watcherThreadPool;
+    }
+
+    public ExecutorService getHandlerThreadPool() {
+        return handlerThreadPool;
+    }
+
+    public void setHandlerThreadPool(ExecutorService handlerThreadPool) {
+        this.handlerThreadPool = handlerThreadPool;
+    }
+
     public void addMonitorPoint(MonitorPoint point) throws MonitorException {
 //        // 未启动
 //        manager.register(point);
