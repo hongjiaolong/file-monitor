@@ -4,13 +4,14 @@
  * Contributors:
  *     Agree Corporation - initial API and implementation
  */
-package core;
+package core.name;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
+ * 命名管理器
  *
  * @author Gan
  * @date 2018年2月2日 上午10:40:29
@@ -42,4 +43,7 @@ public abstract class NameManager<T> {
         return nameTables.remove(name);
     }
     
+    public Collection<T> getAllNameObjects() {
+        return nameTables.values();
+    }
 }

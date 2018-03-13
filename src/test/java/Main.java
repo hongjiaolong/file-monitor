@@ -6,7 +6,9 @@ import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
@@ -23,17 +25,27 @@ import static java.nio.file.StandardWatchEventKinds.*;
 public class Main {
     
     public static void main(String[] args) throws Exception {
-        CompletableFuture.supplyAsync(() -> {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        WatchService service = FileSystems.getDefault().newWatchService();
+        Path path = Paths.get("ss");
+        System.out.println(path.toAbsolutePath().normalize());
+        
+        Path path2 = Paths.get("ss2");
+        
+        path.register(service, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
+        path2.register(service, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE);
+        try {
+            WatchKey key = service.take();
+            List<WatchEvent<?>> events = key.pollEvents();
+            for (WatchEvent<?> e : events) {
+                System.out.println(e.context() + " " + e.count() + " " + e.kind());
             }
-            System.out.println(Thread.currentThread());
-            return null;
-        }, Executors.newSingleThreadExecutor()).whenComplete((s, t) -> {
-            System.out.println(Thread.currentThread());
-        });
+            if (!key.reset()) {
+                System.out.println("HH");
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        
     }
     
     void f() throws Exception {

@@ -4,7 +4,7 @@
  * Contributors:
  *     Agree Corporation - initial API and implementation
  */
-package core;
+package core.name;
 
 /**
  *

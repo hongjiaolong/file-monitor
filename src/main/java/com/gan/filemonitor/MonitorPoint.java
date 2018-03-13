@@ -6,13 +6,14 @@
  */
 package com.gan.filemonitor;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.WatchEvent;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.gan.filemonitor.handler.HandlerChain;
-import com.gan.filemonitor.handler.IWatchEventHandler;
 
 /**
  *
@@ -27,19 +28,52 @@ public class MonitorPoint {
     private String name;
     private String path;
     private WatchEvent.Kind<?>[] interestOps;
-    private List<HandlerChainWrapper> handlerChainWrappers;
+    private List<HandlerChain> handlerChains;
     
     private boolean recursion;
     private boolean ignoreDirectory;
-    private boolean exclusiveService;
-    private boolean inSameService;
+    
+    private MonitorMode monitorMode;
+    private HandlerChainMode handlerChainMode;
     
     public boolean isFile() {
-        return false;
+        return Files.isRegularFile(Paths.get(path));
     }
     
     public boolean isDirectory() {
-        return !isFile();
+        return Files.isDirectory(Paths.get(path));
+    }
+    
+    public Path getAbsoluteMonitorPath() {
+        return path == null ? null : Paths.get(path).toAbsolutePath().normalize();
+    }
+    
+    /**
+     * 返回所有用于监视器注册的路径
+     */
+    public List<Path> getRegisterPaths() {
+        List<Path> paths = new ArrayList<>();
+        if (isFile()) {
+            paths.add(getAbsoluteMonitorPath().getParent());
+        } else if (isDirectory()) {
+            if (recursion) {
+                paths.add(getAbsoluteMonitorPath().getParent());
+            }
+        }
+        return paths;
+    }
+    
+    /**
+     * 返回所有被监视的路径
+     */
+    public List<Path> getAllMonitoredPaths() {
+        List<Path> paths = new ArrayList<>();
+        if (isFile()) {
+            paths.add(Paths.get(path));
+        } else if (isDirectory()) {
+            
+        }
+        return paths;
     }
     
     @Override
@@ -51,12 +85,7 @@ public class MonitorPoint {
      * setter / getter （变体）
      ********************************************************/
     
-    public void addHandlerChain(HandlerChain handlerChain) {
-        this.addHandlerChain(handlerChain, true);
-    }
-    public void addHandlerChain(HandlerChain handlerChain, boolean runInSeperatedThread) {
-        this.handlerChainWrappers.add(new HandlerChainWrapper(handlerChain, runInSeperatedThread));
-    }
+    
     
     /********************************************************
      * setter / getter
@@ -80,6 +109,12 @@ public class MonitorPoint {
     public void setInterestOps(WatchEvent.Kind<?>[] interestOps) {
         this.interestOps = interestOps;
     }
+    public List<HandlerChain> getHandlerChains() {
+        return handlerChains;
+    }
+    public void addHandlerChain(HandlerChain handlerChain) {
+        this.handlerChains.add(handlerChain);
+    }
     public boolean isRecursion() {
         return recursion;
     }
@@ -92,32 +127,23 @@ public class MonitorPoint {
     public void setIgnoreDirectory(boolean ignoreDirectory) {
         this.ignoreDirectory = ignoreDirectory;
     }
-    public boolean isExclusiveService() {
-        return exclusiveService;
+    public MonitorMode getMonitorMode() {
+        return monitorMode;
     }
-    public void setExclusiveService(boolean exclusiveService) {
-        this.exclusiveService = exclusiveService;
+    public void setMonitorMode(MonitorMode monitorMode) {
+        this.monitorMode = monitorMode;
     }
-    public boolean isInSameService() {
-        return inSameService;
+    public HandlerChainMode getHandlerChainMode() {
+        return handlerChainMode;
     }
-    public void setInSameService(boolean inSameService) {
-        this.inSameService = inSameService;
-    }
-    
-    public static class HandlerChainWrapper {
-        private HandlerChain handlerChain;
-        private boolean runInSeperatedThread;
-        private HandlerChainWrapper(HandlerChain handlerChain, boolean runInSeperatedThread) {
-            this.handlerChain = handlerChain;
-            this.runInSeperatedThread = runInSeperatedThread;
-        }
-        public HandlerChain getHandlerChain() {
-            return handlerChain;
-        }
-        public boolean isRunInSeperatedThread() {
-            return runInSeperatedThread;
-        }
+    public void setHandlerChainMode(HandlerChainMode handlerChainMode) {
+        this.handlerChainMode = handlerChainMode;
     }
     
+    public static enum MonitorMode {
+        NORMAL, INSEPARABLE, EXCLUSIVE
+    }
+    public static enum HandlerChainMode {
+        RUN_IN_CURRENT_THREAD, RUN_IN_SEPERATED_THREAD
+    }
 }

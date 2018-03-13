@@ -6,40 +6,16 @@
  */
 package com.gan.filemonitor;
 
-import java.io.IOException;
-import java.nio.file.ClosedWatchServiceException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-import java.nio.file.Watchable;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.gan.filemonitor.handler.IWatchEventHandler;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
-import core.GenerateNameException;
-import core.NameManager;
+import core.name.GenerateNameException;
+import core.name.NameManager;
 
 /**
  *
@@ -53,23 +29,14 @@ public class FileSystemMonitor {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemMonitor.class);
     
-    private PathWatcherPool watcherPool = new PathWatcherPool();
+    private PathWatcherPool watcherPool;
     
-    private NameManager<MonitorPoint> manager = new NameManager<MonitorPoint>() {
-        @Override
-        protected String generateName(MonitorPoint point) throws GenerateNameException {
-            if (StringUtils.isBlank(point.getName())) {
-                throw new GenerateNameException(point + " has not a name");
-            }
-            if (exists(point.getName())) {
-                throw new GenerateNameException(point + " has been registered");
-            }
-            return point.getName();
-        }
-    };
+    private NameManager<MonitorPoint> manager;
     
     private ExecutorService watcherThreadPool = Executors.newCachedThreadPool();
     private ExecutorService handlerThreadPool;
+    
+    private MonitorState monitorState = MonitorState.NEW;
     
     public ExecutorService getWatcherThreadPool() {
         return watcherThreadPool;
@@ -88,20 +55,20 @@ public class FileSystemMonitor {
     }
 
     public void addMonitorPoint(MonitorPoint point) throws MonitorException {
-//        // 未启动
-//        manager.register(point);
+        if (monitorState == MonitorState.NEW || monitorState == MonitorState.DESTROYED) {
+            throw new MonitorException("This operation is not supported in state " + monitorState);
+        }
         
-        // 启动
         try {
-            manager.register(point);
-            watcherPool.register(point);
-        } catch (Exception e) {
+            if (manager.register(point) && monitorState == MonitorState.RUNNING) {
+                watcherPool.register(point);
+            }
+        } catch (GenerateNameException e) {
+            throw new MonitorException("Fail to add " + point, e);
+        } catch (MonitorPointRegisterException e) {
+            manager.cancel(point.getName());
             throw new MonitorException("Fail to add " + point, e);
         }
-    }
-    
-    public boolean addMonitorPoint(String name, MonitorPoint point) {
-        return false;
     }
     
     public boolean removeMonitorPoint(MonitorPoint point) {
@@ -129,19 +96,49 @@ public class FileSystemMonitor {
     }
     
     public void init() {
-        
+        watcherPool = new PathWatcherPool();
+        manager = new NameManager<MonitorPoint>() {
+            @Override
+            protected String generateName(MonitorPoint point) throws GenerateNameException {
+                if (StringUtils.isBlank(point.getName())) {
+                    throw new GenerateNameException(point + " has not a name");
+                }
+                if (exists(point.getName())) {
+                    throw new GenerateNameException(point + " has been registered");
+                }
+                return point.getName();
+            }
+        };
+        monitorState = MonitorState.INITED;
     }
     
     public void start() {
-        
+        for (MonitorPoint point : manager.getAllNameObjects()) {
+            try {
+                watcherPool.register(point);
+            } catch (MonitorPointRegisterException e) {
+                manager.cancel(point.getName());
+                LOGGER.warn("Fail to register {}. Cause by : ", point, e);
+            }
+        }
+        monitorState = MonitorState.RUNNING;
     }
     
     public void stop() {
-        
+        for (MonitorPoint point : manager.getAllNameObjects()) {
+            try {
+                watcherPool.register(point);
+            } catch (MonitorPointRegisterException e) {
+                manager.cancel(point.getName());
+                LOGGER.warn("Fail to register {}. Cause by : ", point, e);
+            }
+        }
+        monitorState = MonitorState.RUNNING;
+        monitorState = MonitorState.STOPPED;
     }
     
     public void destroy() {
-        
+        monitorState = MonitorState.DESTROYED;
     }
     
     
@@ -162,4 +159,35 @@ public class FileSystemMonitor {
         monitor.addMonitorPoint(new MonitorPoint());
     }
     
+    /**
+     * 监视器状态
+     * 
+     * NEW : 无资源，无监控，从未初始化过
+     * INITED : 有资源，无监控
+     * RUNNING : 有资源，有监控
+     * STOPPED : 有资源，无监控
+     * DESTROYED : 无资源，无监控，至少初始化过一次
+     * 
+     * NEW -> INITED
+     * INITED -> RUNNING
+     * INITED -> DESTROYED
+     * RUNNING -> STOPPED
+     * RUNNING -> DESTROYED
+     * STOPPED -> DESTROYED
+     * DESTROYED -> INITED
+     *
+     * @author Gan
+     * @date 2018年2月5日 上午10:29:24
+     * @version 1.0
+     *
+     */
+    public enum MonitorState {
+        NEW, INITED, RUNNING, STOPPED, DESTROYED;
+        public boolean noGreaterThan(MonitorState state) {
+            return this.ordinal() <= state.ordinal();
+        }
+        public boolean lessThan(MonitorState state) {
+            return this.ordinal() < state.ordinal();
+        }
+    }
 }
