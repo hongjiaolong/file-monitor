@@ -20,7 +20,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         WatchService service = FileSystems.getDefault().newWatchService();
         Path path = Paths.get("ss");
-        System.out.println(path.toAbsolutePath().normalize());
+        System.out.println(path.toAbsolutePath().normalize());;
         
         Path path2 = Paths.get("ss2");
         
